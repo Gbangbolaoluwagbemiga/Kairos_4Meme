@@ -1,0 +1,7 @@
+# One HTTPS URL per line. Fetched at index time and embedded with local .md files.
+# Lines starting with # are ignored.
+
+# EVM chain documentation (BNB Chain / Four.meme Sprint)
+# (Keep this list small and high-signal; everything here is fetched and indexed at startup.)
+https://docs.bnbchain.org/
+https://docs.bnbchain.org/bnb-smart-chain/
