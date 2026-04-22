@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function WalletButton() {
-  const { isConnected, address, disconnect, signIn, open } = useWallet();
+  const { isConnected, address, disconnect, open } = useWallet();
 
   const truncatedAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -46,10 +46,11 @@ export function WalletButton() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => open()}
+          onClick={disconnect}
           className="rounded-xl cursor-pointer"
         >
-          Connect / Switch wallet
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign out
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => window.open(`https://testnet.arcscan.app/address/${address}`, '_blank')}
@@ -57,10 +58,6 @@ export function WalletButton() {
         >
           <ExternalLink className="w-4 h-4 mr-2" />
           View on Explorer
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={disconnect} className="rounded-xl cursor-pointer text-destructive focus:text-destructive">
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

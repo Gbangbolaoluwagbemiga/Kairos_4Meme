@@ -2,7 +2,7 @@ import React, { createContext, useContext, useCallback, useEffect, useMemo, useR
 import { toast } from 'sonner';
 import { FOURMEME_CHAIN_ID, KAIROS_API_URL } from '@/lib/fourmeme';
 import { ethers } from 'ethers';
-import { useAppKit, useAppKitAccount, useAppKitNetwork, useAppKitProvider } from '@reown/appkit/react';
+import { useAppKit, useAppKitAccount, useAppKitNetwork, useAppKitProvider, useDisconnect } from '@reown/appkit/react';
 
 interface WalletContextType {
   isConnected: boolean;
@@ -12,7 +12,7 @@ interface WalletContextType {
   open: () => void;
   /** Request a signature to prove wallet control (always triggers a popup). */
   signIn: () => Promise<string | null>;
-  disconnect: () => void;
+  disconnect: () => Promise<void>;
   refreshBalance: () => void;
   chainOk: boolean;
 }
@@ -24,6 +24,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [chainOk, setChainOk] = React.useState<boolean>(true);
   const providerRef = useRef<ethers.BrowserProvider | null>(null);
   const { open } = useAppKit();
+  const { disconnect: appKitDisconnect } = useDisconnect();
   const { address, isConnected } = useAppKitAccount();
   const { chainId } = useAppKitNetwork();
   const appKitProvider = useAppKitProvider('eip155');
@@ -97,11 +98,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [address, appKitProvider, isConnected, open]);
 
-  // AppKit manages session disconnect via its own UI; locally we just clear cached balance.
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
+    try {
+      await appKitDisconnect();
+    } catch {
+      // ignore
+    }
+    providerRef.current = null;
     setBalance("0.0000");
-    toast.info('Wallet disconnected');
-  }, []);
+    toast.info('Signed out');
+  }, [appKitDisconnect]);
 
   const computedAddress = useMemo(() => (address ? String(address) : null), [address]);
 
