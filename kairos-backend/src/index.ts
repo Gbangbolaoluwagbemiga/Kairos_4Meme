@@ -538,11 +538,12 @@ app.get("/dashboard/stats", async (req, res) => {
     const agentId = (Array.isArray(rawId) ? rawId[0] : rawId) as string | undefined;
     try {
         if (agentId) {
-            const [stats, dbBalance, persistedLogicalIds, recentTrend] = await Promise.all([
+            const [stats, dbBalance, persistedLogicalIds, recentTrend, recentQueries] = await Promise.all([
                 getAgentStatsById(agentId),
                 getAgentTreasuryBalance(agentId),
                 getPersistedLogicalIdsForAgent(agentId),
-                getAgentTreasuryTrend(agentId)
+                getAgentTreasuryTrend(agentId),
+                getRecentQueries(agentId, 20),
             ]);
 
             const localAgentLogs = localQueryLogs.filter(q => q.agentId === agentId);
@@ -584,6 +585,18 @@ app.get("/dashboard/stats", async (req, res) => {
             }, 0);
 
             const treasury = dbBalance > 0 ? dbBalance + localDelta : localOnly;
+            const recentActivitySum = (recentQueries || []).reduce((sum, q) => {
+                const raw = (q as any)?.nominalUsd;
+                const n = raw == null || raw === "" ? NaN : Number.parseFloat(String(raw));
+                const amt =
+                    Number.isFinite(n) && n > 0
+                        ? n
+                        : ((q as any)?.direction || "credit") === "debit"
+                          ? Number(process.env.KAIROS_A2A_PRICE_BNB || "0.00025") || 0.00025
+                          : AGENT_PRICING[agentId] ?? DEFAULT_AGENT_PRICE_BNB;
+                const d = String((q as any)?.direction || "credit").toLowerCase();
+                return d === "debit" ? sum - amt : sum + amt;
+            }, 0);
             const usageCount = stats?.usageCount || localAgentLogs.filter(q => q.direction !== 'debit').length;
             
             // Calculate trend percentage (daily growth relative to total)
@@ -597,6 +610,8 @@ app.get("/dashboard/stats", async (req, res) => {
                 tasksCompleted: usageCount,
                 rating: stats?.rating || 0,
                 treasury: treasury.toFixed(6),
+                recentActivitySum: recentActivitySum.toFixed(6),
+                recentActivityCount: (recentQueries || []).length,
                 trend: trendPct > 0 ? trendPct.toFixed(1) : 0,
             });
         } else {

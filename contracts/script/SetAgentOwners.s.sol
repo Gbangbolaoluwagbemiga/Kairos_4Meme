@@ -9,7 +9,9 @@ import "../src/AgentRegistry.sol";
 contract SetAgentOwners is Script {
     function run() external {
         address registryAddr = vm.envOr("KAIROS_AGENT_REGISTRY", address(0));
-        if (registryAddr == address(0)) registryAddr = vm.envOr("KAIROS_AGENT_REGISTRY_EVM_ADDRESS", address(0));
+        if (registryAddr == address(0)) {
+            registryAddr = vm.envOr("KAIROS_AGENT_REGISTRY_EVM_ADDRESS", address(0));
+        }
         if (registryAddr == address(0)) registryAddr = 0x7e7b5dbaE3aDb3D94a27DCfB383bDB98667145E6;
 
         AgentRegistry registry = AgentRegistry(registryAddr);

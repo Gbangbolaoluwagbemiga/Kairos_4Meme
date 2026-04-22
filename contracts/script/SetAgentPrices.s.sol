@@ -8,7 +8,9 @@ import "../src/AgentRegistry.sol";
 contract SetAgentPrices is Script {
     function run() external {
         address registryAddr = vm.envOr("KAIROS_AGENT_REGISTRY", address(0));
-        if (registryAddr == address(0)) registryAddr = vm.envOr("KAIROS_AGENT_REGISTRY_EVM_ADDRESS", address(0));
+        if (registryAddr == address(0)) {
+            registryAddr = vm.envOr("KAIROS_AGENT_REGISTRY_EVM_ADDRESS", address(0));
+        }
         if (registryAddr == address(0)) registryAddr = 0x7e7b5dbaE3aDb3D94a27DCfB383bDB98667145E6;
 
         uint256 priceWei = vm.envOr("KAIROS_DEFAULT_AGENT_PRICE_WEI", uint256(5e14)); // 0.0005 BNB

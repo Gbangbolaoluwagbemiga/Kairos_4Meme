@@ -26,7 +26,8 @@ contract RegisterAgents is Script {
         }
 
         AgentRegistry registry = AgentRegistry(registryAddr);
-        SpendingPolicy policy = policyAddr == address(0) ? SpendingPolicy(address(0)) : SpendingPolicy(policyAddr);
+        SpendingPolicy policy =
+            policyAddr == address(0) ? SpendingPolicy(address(0)) : SpendingPolicy(policyAddr);
 
         // Default per-task price (native BNB) in wei.
         uint256 priceWei = vm.envOr("KAIROS_DEFAULT_AGENT_PRICE_WEI", uint256(1e15)); // 0.001 BNB
@@ -38,13 +39,50 @@ contract RegisterAgents is Script {
         vm.startBroadcast();
         _reg(registry, "oracle", vm.envOr("ORACLE_OWNER", admin), "Price Oracle", "price", priceWei);
         _reg(registry, "news", vm.envOr("NEWS_OWNER", admin), "News Scout", "news", priceWei);
-        _reg(registry, "yield", vm.envOr("YIELD_OWNER", admin), "Yield Optimizer", "yield", priceWei);
-        _reg(registry, "tokenomics", vm.envOr("TOKENOMICS_OWNER", admin), "Tokenomics Analyzer", "tokenomics", priceWei);
+        _reg(
+            registry, "yield", vm.envOr("YIELD_OWNER", admin), "Yield Optimizer", "yield", priceWei
+        );
+        _reg(
+            registry,
+            "tokenomics",
+            vm.envOr("TOKENOMICS_OWNER", admin),
+            "Tokenomics Analyzer",
+            "tokenomics",
+            priceWei
+        );
         _reg(registry, "perp", vm.envOr("PERP_OWNER", admin), "Perp Stats", "perp", priceWei);
-        _reg(registry, "protocol", vm.envOr("PROTOCOL_OWNER", admin), "Protocol Stats", "protocol", priceWei);
-        _reg(registry, "bridges", vm.envOr("BRIDGES_OWNER", admin), "Bridge Monitor", "bridges", priceWei);
-        _reg(registry, "dex-volumes", vm.envOr("DEX_VOLUMES_OWNER", admin), "DEX Volumes", "dex-volumes", priceWei);
-        _reg(registry, "chain-scout", vm.envOr("CHAIN_SCOUT_OWNER", admin), "Chain Scout", "chain-scout", priceWei);
+        _reg(
+            registry,
+            "protocol",
+            vm.envOr("PROTOCOL_OWNER", admin),
+            "Protocol Stats",
+            "protocol",
+            priceWei
+        );
+        _reg(
+            registry,
+            "bridges",
+            vm.envOr("BRIDGES_OWNER", admin),
+            "Bridge Monitor",
+            "bridges",
+            priceWei
+        );
+        _reg(
+            registry,
+            "dex-volumes",
+            vm.envOr("DEX_VOLUMES_OWNER", admin),
+            "DEX Volumes",
+            "dex-volumes",
+            priceWei
+        );
+        _reg(
+            registry,
+            "chain-scout",
+            vm.envOr("CHAIN_SCOUT_OWNER", admin),
+            "Chain Scout",
+            "chain-scout",
+            priceWei
+        );
 
         if (policyAddr != address(0) && dailyLimitWei > 0) {
             policy.setDailyLimit(keccak256(bytes("oracle")), dailyLimitWei);
@@ -62,7 +100,7 @@ contract RegisterAgents is Script {
     ) internal {
         bytes32 k = keccak256(bytes(key));
         // Try register; if exists, update.
-        try registry.registerAgent(k, owner, name, serviceType, priceWei) {}
+        try registry.registerAgent(k, owner, name, serviceType, priceWei) { }
         catch {
             registry.updateAgent(k, owner, priceWei, true);
         }

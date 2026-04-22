@@ -14,9 +14,11 @@ const CHART_DATA = [
 interface TreasuryCardProps {
   balance: number;
   trend: number;
+  recentSum?: number;
+  recentCount?: number;
 }
 
-export function TreasuryCard({ balance, trend }: TreasuryCardProps) {
+export function TreasuryCard({ balance, trend, recentSum, recentCount }: TreasuryCardProps) {
   return (
     <div className="liquid-glass-card liquid-glass-shimmer p-5 relative overflow-hidden group">
       <div className="relative z-10">
@@ -32,8 +34,13 @@ export function TreasuryCard({ balance, trend }: TreasuryCardProps) {
         <p className="text-muted-foreground text-sm font-medium">Treasury Balance</p>
         <h3 className="text-2xl font-medium text-foreground mt-1">{balance.toFixed(4)} <span className="text-sm text-muted-foreground">BNB</span></h3>
         <p className="text-[10px] text-muted-foreground/65 mt-1.5 leading-snug">
-          Paid per agent task · see activity links for on-chain receipts
+          All-time (Supabase + safe local merge). Recent activity is a slice.
         </p>
+        {typeof recentSum === 'number' && typeof recentCount === 'number' && recentCount > 0 && (
+          <p className="text-[10px] text-muted-foreground/70 mt-1">
+            Last {recentCount}: <span className="text-emerald-300/90 font-mono">{recentSum.toFixed(4)} BNB</span>
+          </p>
+        )}
       </div>
 
       {/* Sparkline Background */}

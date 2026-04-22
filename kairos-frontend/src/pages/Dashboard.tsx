@@ -23,6 +23,8 @@ const Dashboard = () => {
   const [selectedAgent, setSelectedAgent] = useState<{ id: string; name: string; wallet?: string } | null>(null);
   const [stats, setStats] = useState({
     treasury: "0.00",
+    recentActivitySum: "0.00",
+    recentActivityCount: 0,
     tasksCompleted: 0,
     rating: 0,
     totalRatings: 0,
@@ -57,6 +59,8 @@ const Dashboard = () => {
 
         setStats({
           treasury: data.treasury || "0.00",
+          recentActivitySum: data.recentActivitySum || "0.00",
+          recentActivityCount: data.recentActivityCount || 0,
           tasksCompleted: data.tasksCompleted || 0,
           rating: data.rating || 0,
           totalRatings: data.totalRatings || 0,
@@ -134,7 +138,12 @@ const Dashboard = () => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TreasuryCard balance={parseFloat(stats.treasury)} trend={parseFloat(stats.trend.toString())} />
+            <TreasuryCard
+              balance={parseFloat(stats.treasury)}
+              trend={parseFloat(stats.trend.toString())}
+              recentSum={parseFloat(stats.recentActivitySum)}
+              recentCount={stats.recentActivityCount}
+            />
             <TasksCard count={stats.tasksCompleted} />
           </div>
 

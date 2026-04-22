@@ -20,7 +20,9 @@ contract AgentRegistry {
     mapping(bytes32 => Agent) private agentsByKey;
     bytes32[] private agentKeys;
 
-    event AgentRegistered(bytes32 indexed key, address indexed owner, string serviceType, uint256 priceWei);
+    event AgentRegistered(
+        bytes32 indexed key, address indexed owner, string serviceType, uint256 priceWei
+    );
     event AgentUpdated(bytes32 indexed key, address indexed owner, uint256 priceWei, bool active);
     event ReputationUpdated(bytes32 indexed key, uint32 reputation, uint32 tasksCompleted);
 
@@ -64,7 +66,10 @@ contract AgentRegistry {
         emit AgentRegistered(key, owner, serviceType, priceWei);
     }
 
-    function updateAgent(bytes32 key, address owner, uint256 priceWei, bool active) external onlyAdmin {
+    function updateAgent(bytes32 key, address owner, uint256 priceWei, bool active)
+        external
+        onlyAdmin
+    {
         Agent storage a = agentsByKey[key];
         if (a.owner == address(0)) revert AgentNotFound();
         if (owner == address(0)) revert InvalidOwner();
@@ -77,7 +82,10 @@ contract AgentRegistry {
     }
 
     /// @notice Called by trusted backend to update reputation/usage counters.
-    function updateReputation(bytes32 key, uint32 reputation, uint32 tasksCompleted) external onlyAdmin {
+    function updateReputation(bytes32 key, uint32 reputation, uint32 tasksCompleted)
+        external
+        onlyAdmin
+    {
         Agent storage a = agentsByKey[key];
         if (a.owner == address(0)) revert AgentNotFound();
         a.reputation = reputation;

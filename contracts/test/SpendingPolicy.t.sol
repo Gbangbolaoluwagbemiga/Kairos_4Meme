@@ -48,8 +48,8 @@ contract SpendingPolicyTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 SpendingPolicy.ExceedsDailyLimit.selector,
-                1 ether,    // remaining
-                2 ether     // requested
+                1 ether, // remaining
+                2 ether // requested
             )
         );
         policy.recordSpend(key, 2 ether);

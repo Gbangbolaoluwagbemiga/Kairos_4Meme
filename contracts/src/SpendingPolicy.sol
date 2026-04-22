@@ -16,7 +16,9 @@ contract SpendingPolicy {
     mapping(bytes32 => Limit) private limits;
 
     event LimitSet(bytes32 indexed agentKey, uint256 dailyLimitWei);
-    event SpendRecorded(bytes32 indexed agentKey, uint256 amountWei, uint256 spentTodayWei, uint256 totalSpentWei);
+    event SpendRecorded(
+        bytes32 indexed agentKey, uint256 amountWei, uint256 spentTodayWei, uint256 totalSpentWei
+    );
 
     error NotAdmin();
     error LimitNotInitialized();

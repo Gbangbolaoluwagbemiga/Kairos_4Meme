@@ -7,7 +7,7 @@ import "../src/AgentRegistry.sol";
 contract AgentRegistryTest is Test {
     AgentRegistry registry;
     address alice = address(0xA11CE);
-    address bob   = address(0xB0B);
+    address bob = address(0xB0B);
 
     function setUp() external {
         registry = new AgentRegistry(address(this));
