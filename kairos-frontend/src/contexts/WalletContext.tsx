@@ -1,16 +1,15 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { FOURMEME_CHAIN_ID, KAIROS_API_URL } from '@/lib/fourmeme';
 import { ethers } from 'ethers';
+import { useAppKit, useAppKitAccount, useAppKitNetwork, useAppKitProvider } from '@reown/appkit/react';
 
 interface WalletContextType {
   isConnected: boolean;
   address: string | null;
   balance: string;
-  /** Connect (eth_requestAccounts). May not show a popup if the site is already authorized. */
-  connect: () => Promise<string | null>;
-  /** Force MetaMask to re-prompt account selection (wallet_requestPermissions). */
-  connectPrompt: () => Promise<string | null>;
+  /** Open Reown (WalletConnect) modal. */
+  open: () => void;
   /** Request a signature to prove wallet control (always triggers a popup). */
   signIn: () => Promise<string | null>;
   disconnect: () => void;
@@ -21,18 +20,19 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [address, setAddress] = useState<string | null>(null);
-  const [balance, setBalance] = useState<string>("0.0000");
-  const [chainOk, setChainOk] = useState<boolean>(true);
+  const [balance, setBalance] = React.useState<string>("0.0000");
+  const [chainOk, setChainOk] = React.useState<boolean>(true);
   const providerRef = useRef<ethers.BrowserProvider | null>(null);
+  const { open } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
+  const { chainId } = useAppKitNetwork();
+  const appKitProvider = useAppKitProvider('eip155');
 
-  // Load address from localStorage on mount
+  // Normalize chainOk from AppKit network
   useEffect(() => {
-    const savedAddress = localStorage.getItem('kairos_address');
-    if (savedAddress) {
-      setAddress(savedAddress);
-    }
-  }, []);
+    if (!chainId) return;
+    setChainOk(Number(chainId) === FOURMEME_CHAIN_ID);
+  }, [chainId]);
 
   // Fetch balance from backend
   const failCountRef = useRef(0);
@@ -61,89 +61,29 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [address, refreshBalance]);
 
-  const connect = useCallback(async () => {
-    try {
-      const eth = (window as any).ethereum;
-      if (!eth) {
-        toast.error('No EVM wallet detected. Please install MetaMask (or a compatible wallet).');
-        return null;
-      }
-      providerRef.current = new ethers.BrowserProvider(eth);
-
-      // Request accounts
-      const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
-      const userAddress = accounts?.[0];
-      if (!userAddress) throw new Error('No account selected');
-
-      // Ensure chain is the Sprint demo testnet
-      const hexChainId = await eth.request({ method: 'eth_chainId' });
-      const current = Number.parseInt(String(hexChainId), 16);
-      if (current !== FOURMEME_CHAIN_ID) {
-        setChainOk(false);
-        try {
-          await eth.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: `0x${FOURMEME_CHAIN_ID.toString(16)}` }],
-          });
-          setChainOk(true);
-        } catch {
-          toast.error(`Please switch your wallet network to BNB Testnet (chainId ${FOURMEME_CHAIN_ID}).`);
-        }
-      } else {
-        setChainOk(true);
-      }
-
-      setAddress(userAddress);
-      localStorage.setItem('kairos_address', userAddress);
-      toast.success('Wallet connected!');
-      refreshBalance();
-      return userAddress;
-    } catch (error: any) {
-      console.error('Connection failed:', error);
-      toast.error('Failed to connect wallet');
-      return null;
-    }
-  }, [refreshBalance]);
-
-  const connectPrompt = useCallback(async () => {
-    const eth = (window as any).ethereum;
-    if (!eth) {
-      toast.error('No EVM wallet detected. Please install MetaMask (or a compatible wallet).');
-      return null;
-    }
-    try {
-      // This forces MetaMask to show the permissions/account selector UI again.
-      await eth.request({
-        method: 'wallet_requestPermissions',
-        params: [{ eth_accounts: {} }],
-      });
-    } catch {
-      // If user rejects, fall back to normal connect flow.
-    }
-    return await connect();
-  }, [connect]);
-
   const signIn = useCallback(async () => {
     try {
-      const eth = (window as any).ethereum;
-      if (!eth) {
-        toast.error('No EVM wallet detected. Please install MetaMask (or a compatible wallet).');
+      if (!import.meta.env.VITE_REOWN_PROJECT_ID) {
+        toast.error('Missing VITE_REOWN_PROJECT_ID. Add it to your frontend env and restart.');
         return null;
       }
-
-      // Ensure we have an address (connect may be silent if already authorized).
-      const addr = address || (await connect());
-      if (!addr) return null;
-
-      // Ensure provider is initialized
-      providerRef.current = providerRef.current || new ethers.BrowserProvider(eth);
+      if (!isConnected) {
+        open();
+        return null;
+      }
+      const ethProvider = (appKitProvider as any)?.walletProvider;
+      if (!ethProvider) {
+        toast.error('Wallet provider not ready. Please reconnect.');
+        return null;
+      }
+      providerRef.current = providerRef.current || new ethers.BrowserProvider(ethProvider);
       const signer = await providerRef.current.getSigner();
 
       // This always triggers a wallet popup.
       const issuedAt = new Date().toISOString();
       const msg =
         `Kairos Sign-In\n` +
-        `Address: ${addr}\n` +
+        `Address: ${address}\n` +
         `Issued At: ${issuedAt}\n` +
         `Purpose: prove wallet control to enable agent actions`;
       const sig = await signer.signMessage(msg);
@@ -155,22 +95,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       else toast.error('Sign-in failed');
       return null;
     }
-  }, [address, connect]);
+  }, [address, appKitProvider, isConnected, open]);
 
+  // AppKit manages session disconnect via its own UI; locally we just clear cached balance.
   const disconnect = useCallback(() => {
-    setAddress(null);
     setBalance("0.0000");
-    localStorage.removeItem('kairos_address');
     toast.info('Wallet disconnected');
   }, []);
 
+  const computedAddress = useMemo(() => (address ? String(address) : null), [address]);
+
   return (
     <WalletContext.Provider value={{
-      isConnected: !!address,
-      address,
+      isConnected: !!computedAddress,
+      address: computedAddress,
       balance,
-      connect,
-      connectPrompt,
+      open,
       signIn,
       disconnect,
       refreshBalance,

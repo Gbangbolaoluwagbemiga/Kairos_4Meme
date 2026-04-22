@@ -1,5 +1,5 @@
 import { useWallet } from '@/contexts/WalletContext';
-import { LogOut, ExternalLink, RefreshCw, PenLine } from 'lucide-react';
+import { LogOut, ExternalLink } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function WalletButton() {
-  const { isConnected, address, disconnect, signIn, connectPrompt } = useWallet();
+  const { isConnected, address, disconnect, signIn, open } = useWallet();
 
   const truncatedAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -19,7 +19,7 @@ export function WalletButton() {
     return (
       <button
         onClick={() => {
-          void signIn();
+          open();
         }}
         className="flex items-center gap-2 px-5 py-2.5 liquid-glass-primary text-primary-foreground rounded-full text-sm font-medium"
       >
@@ -46,18 +46,10 @@ export function WalletButton() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => void signIn()}
+          onClick={() => open()}
           className="rounded-xl cursor-pointer"
         >
-          <PenLine className="w-4 h-4 mr-2" />
-          Sign again
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => void connectPrompt()}
-          className="rounded-xl cursor-pointer"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Switch account
+          Connect / Switch wallet
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => window.open(`https://testnet.arcscan.app/address/${address}`, '_blank')}
