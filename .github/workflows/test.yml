@@ -1,0 +1,95 @@
+name: CI
+
+permissions: {}
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    name: Foundry project
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Show Forge version
+        run: forge --version
+
+      - name: Run Forge fmt
+        working-directory: contracts
+        run: forge fmt --check
+
+      - name: Run Forge build
+        working-directory: contracts
+        run: forge build --sizes
+
+      - name: Run Forge tests
+        working-directory: contracts
+        run: forge test -vvv
+
+  backend-build:
+    name: Backend build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: kairos-backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: kairos-backend
+        run: npm install
+
+      - name: Typecheck/build
+        working-directory: kairos-backend
+        run: npm run build
+
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: kairos-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: kairos-frontend
+        run: npm install
+
+      - name: Lint
+        working-directory: kairos-frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: kairos-frontend
+        run: npm run build
